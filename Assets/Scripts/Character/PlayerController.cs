@@ -23,13 +23,14 @@ public class PlayerController : MonoBehaviour
             input = GetComponent<PlayerInputHandler>();
 
         input.Initialize(movement, combat);
+        movement.OnJumpExecuted += combat.CancelAttack;
     }
 
     void Update()
     {
         float dt = Time.deltaTime;
         movement.UpdateTimers(dt);
-        combat.UpdateTimers(dt);
+        combat.UpdateTimers(dt, movement.IsGrounded);
     }
 
     void FixedUpdate()

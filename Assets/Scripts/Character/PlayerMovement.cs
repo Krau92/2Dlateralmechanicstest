@@ -11,6 +11,7 @@ public class PlayerMovement : MonoBehaviour
     [SerializeField] private Transform groundCheck;
     [SerializeField] private LayerMask groundLayer;
     [SerializeField] private BoxCollider2D playerCollider;
+    [SerializeField] private PlayerCombat combat;
 
     [Header("Movement")]
     [SerializeField] private float moveSpeed = 8f;
@@ -55,24 +56,30 @@ public class PlayerMovement : MonoBehaviour
     [Header("Dash")]
     [SerializeField] private float dashForce = 20f;
     [SerializeField] private float dashDuration = 0.2f;
-    [SerializeField] private float dashCooldown = 1f;
     [SerializeField] private float dashColliderShrinkYMultiplier = 0.5f;
+
+    [Header("Double Jump")]
+    [SerializeField] private float doubleJumpForce = 12f;
 
     #endregion
 
     #region Private Fields
 
+    public event System.Action OnJumpExecuted;
+
     private Vector2 moveInput;
     private float coyoteTimer;
     private float jumpBufferTimer;
-    private bool isGrounded;
+    public bool IsGrounded { get; private set; }
     private bool jumpPressed;
     private bool isJumping;
     private bool isDashing;
     private float jumpHoldTimer;
     private float dashDurationTimer;
-    private float dashCooldownTimer;
     private bool isSprinting;
+    private bool hasDoubleJumped;
+    private bool doubleJumpPressed;
+    private bool hasAirDashed;
     private Vector2 originalColliderSize;
     private Vector2 originalColliderOffset;
 
@@ -87,6 +94,8 @@ public class PlayerMovement : MonoBehaviour
             groundCheck = transform;
         if (playerCollider == null)
             playerCollider = GetComponent<BoxCollider2D>();
+        if (combat == null)
+            combat = GetComponent<PlayerCombat>();
         originalColliderSize = playerCollider.size;
         originalColliderOffset = playerCollider.offset;
     }
@@ -97,11 +106,13 @@ public class PlayerMovement : MonoBehaviour
 
     public void UpdateTimers(float dt)
     {
-        isGrounded = Physics2D.OverlapCircle(groundCheck.position, groundCheckRadius, groundLayer);
+        IsGrounded = Physics2D.OverlapCircle(groundCheck.position, groundCheckRadius, groundLayer);
 
-        if (isGrounded)
+        if (IsGrounded)
         {
             coyoteTimer = coyoteTime;
+            hasAirDashed = false;
+            hasDoubleJumped = false;
 
             if (jumpBufferTimer > 0f)
             {
@@ -126,8 +137,6 @@ public class PlayerMovement : MonoBehaviour
 
         if (dashDurationTimer > 0f)
             dashDurationTimer -= dt;
-        if (dashCooldownTimer > 0f)
-            dashCooldownTimer -= dt;
 
         if (isDashing && dashDurationTimer <= 0f)
         {
@@ -153,7 +162,7 @@ public class PlayerMovement : MonoBehaviour
             transform.localScale = localScale;
         }
 
-        if (combatState.IsAttacking)
+        if (combatState.Phase != CombatPhase.NotAttacking)
         {
             velocity.x = Mathf.MoveTowards(velocity.x, 0f, combatState.HorizontalDrag * fixedDt);
             velocity.y = Mathf.MoveTowards(velocity.y, 0f, combatState.VerticalDrag * fixedDt);
@@ -167,8 +176,8 @@ public class PlayerMovement : MonoBehaviour
             float speedMultiplier = isSprinting ? sprintSpeedMultiplier : 1f;
             float currentMaxSpeed = maxSpeed * speedMultiplier;
             float targetSpeed = moveInput.x * moveSpeed * speedMultiplier;
-            float accel = isGrounded ? acceleration : airAcceleration;
-            float decel = isGrounded ? deceleration : airDeceleration;
+            float accel = IsGrounded ? acceleration : airAcceleration;
+            float decel = IsGrounded ? deceleration : airDeceleration;
 
             if (moveInput.x != 0f)
             {
@@ -190,13 +199,19 @@ public class PlayerMovement : MonoBehaviour
             coyoteTimer = 0f;
         }
 
+        if (doubleJumpPressed)
+        {
+            velocity.y = doubleJumpForce;
+            doubleJumpPressed = false;
+        }
+
         float gravityMultiplier = gravityScale;
 
-        if (combatState.IsAttacking)
+        if (combatState.Phase != CombatPhase.NotAttacking)
         {
             gravityMultiplier *= combatState.FallGravityMultiplier;
         }
-        else if (!isGrounded)
+        else if (!IsGrounded)
         {
             bool isFalling = velocity.y < 0f;
             bool isApex = Mathf.Abs(velocity.y) < apexThreshold;
@@ -232,7 +247,15 @@ public class PlayerMovement : MonoBehaviour
         jumpBufferTimer = jumpBufferTime;
 
         if (coyoteTimer > 0f && !isDashing)
+        {
             jumpPressed = true;
+            OnJumpExecuted?.Invoke();
+        }
+        else if (!IsGrounded && !hasDoubleJumped && combat != null && !combat.IsInAttackDuration())
+        {
+            doubleJumpPressed = true;
+            hasDoubleJumped = true;
+        }
     }
 
     public void OnJumpCanceled()
@@ -253,28 +276,45 @@ public class PlayerMovement : MonoBehaviour
 
     public void OnDash()
     {
-        if (dashCooldownTimer <= 0f && isGrounded)
+        if (isDashing)
+            return;
+
+        if (IsGrounded)
         {
-            dashDurationTimer = dashDuration;
-            dashCooldownTimer = dashCooldown;
-            isDashing = true;
-
-            Vector2 dashDir = FacingRight ? Vector2.right : Vector2.left;
-            rb.AddForce(dashDir * dashForce, ForceMode2D.Impulse);
-
-            Vector2 newSize = originalColliderSize;
-            newSize.y *= dashColliderShrinkYMultiplier;
-            playerCollider.size = newSize;
-
-            Vector2 newOffset = originalColliderOffset;
-            newOffset.y -= (originalColliderSize.y - newSize.y) / 2f;
-            playerCollider.offset = newOffset;
+            ExecuteDash();
+            hasAirDashed = false;
         }
+        else
+        {
+            if (hasAirDashed)
+                return;
+            if (combat != null && combat.IsInAttackDuration())
+                return;
+            ExecuteDash();
+            hasAirDashed = true;
+        }
+    }
+
+    private void ExecuteDash()
+    {
+        dashDurationTimer = dashDuration;
+        isDashing = true;
+
+        Vector2 dashDir = FacingRight ? Vector2.right : Vector2.left;
+        rb.AddForce(dashDir * dashForce, ForceMode2D.Impulse);
+
+        Vector2 newSize = originalColliderSize;
+        newSize.y *= dashColliderShrinkYMultiplier;
+        playerCollider.size = newSize;
+
+        Vector2 newOffset = originalColliderOffset;
+        newOffset.y -= (originalColliderSize.y - newSize.y) / 2f;
+        playerCollider.offset = newOffset;
     }
 
     public MovementState GetState()
     {
-        return new MovementState(FacingRight, isDashing, isGrounded);
+        return new MovementState(FacingRight, isDashing, IsGrounded);
     }
 
     #endregion
@@ -290,7 +330,7 @@ public class PlayerMovement : MonoBehaviour
     void OnDrawGizmosSelected()
     {
         if (groundCheck == null) return;
-        Gizmos.color = isGrounded ? Color.green : Color.red;
+        Gizmos.color = IsGrounded ? Color.green : Color.red;
         Gizmos.DrawWireSphere(groundCheck.position, groundCheckRadius);
     }
 

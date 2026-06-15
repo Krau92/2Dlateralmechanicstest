@@ -6,6 +6,7 @@ public class PlayerInputHandler : MonoBehaviour, InputSystem_Actions.IPlayerActi
     private PlayerMovement movement;
     private PlayerCombat combat;
     private InputSystem_Actions input;
+    private Vector2 lastMoveInput;
 
     public void Initialize(PlayerMovement movement, PlayerCombat combat)
     {
@@ -29,7 +30,8 @@ public class PlayerInputHandler : MonoBehaviour, InputSystem_Actions.IPlayerActi
 
     public void OnMove(InputAction.CallbackContext context)
     {
-        movement?.OnMove(context.ReadValue<Vector2>());
+        lastMoveInput = context.ReadValue<Vector2>();
+        movement?.OnMove(lastMoveInput);
     }
 
     public void OnJump(InputAction.CallbackContext context)
@@ -43,7 +45,7 @@ public class PlayerInputHandler : MonoBehaviour, InputSystem_Actions.IPlayerActi
     public void OnAttack(InputAction.CallbackContext context)
     {
         if (context.performed && combat != null)
-            combat.OnAttack(movement.GetState());
+            combat.OnAttack(movement.GetState(), lastMoveInput.y);
     }
 
     public void OnShoot(InputAction.CallbackContext context)

@@ -25,7 +25,7 @@ Transform:
   m_GameObject: {fileID: 927746562918551004}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 1.19, y: 0, z: 0}
+  m_LocalPosition: {x: 1.06, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -69,6 +69,7 @@ Transform:
   m_Children:
   - {fileID: 5181285704488583872}
   - {fileID: 2250161564053267232}
+  - {fileID: 8014339850717013584}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &2888260260719898268
@@ -116,6 +117,7 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 128
   playerCollider: {fileID: 7029899365042053386}
+  combat: {fileID: 0}
   moveSpeed: 8
   acceleration: 60
   deceleration: 80
@@ -138,9 +140,9 @@ MonoBehaviour:
   dashDecelerationMultiplier: 0.5
   sprintSpeedMultiplier: 1.5
   dashForce: 22
-  dashDuration: 0.2
-  dashCooldown: 0.5
+  dashDuration: 0.5
   dashColliderShrinkYMultiplier: 0.5
+  doubleJumpForce: 12
 --- !u!114 &6206818240266222299
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -154,13 +156,34 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerCombat
   weaponSpawnPoint: {fileID: 2250161564053267232}
+  feetSpawnPoint: {fileID: 8014339850717013584}
   meleePrefab: {fileID: 2510565857928163978, guid: d7553c6d11c738b40bcf9206f986f11d, type: 3}
   rangedPrefab: {fileID: 1815184982427849882, guid: 8b28b27c96e5b194c8b5a97526b817e4, type: 3}
-  meleeCooldown: 0.3
   rangedCooldown: 0.5
-  attackFallGravityMultiplier: 0.1
-  attackHorizontalDrag: 40
-  attackVerticalDrag: 50
+  combo1Stats:
+    AttackDuration: 0.25
+    ComboWindow: 0.75
+    HorizontalDrag: 40
+    VerticalDrag: 50
+    FallGravityMultiplier: 0.1
+  combo2Stats:
+    AttackDuration: 0.25
+    ComboWindow: 0.75
+    HorizontalDrag: 40
+    VerticalDrag: 50
+    FallGravityMultiplier: 0.1
+  combo3Stats:
+    AttackDuration: 0.25
+    ComboWindow: 0.5
+    HorizontalDrag: 80
+    VerticalDrag: 80
+    FallGravityMultiplier: 1
+  spikeStats:
+    AttackDuration: 0.5
+    ComboWindow: 0
+    HorizontalDrag: 0
+    VerticalDrag: 0
+    FallGravityMultiplier: 5
 --- !u!212 &707954860014696749
 SpriteRenderer:
   serializedVersion: 2
@@ -319,6 +342,37 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: -0.73, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 4498507443110180910}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &8508542002853704484
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 8014339850717013584}
+  m_Layer: 0
+  m_Name: SpikeWeaponSpawn
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &8014339850717013584
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8508542002853704484}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: -1.425, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
