@@ -1,4 +1,4 @@
-# Neva Movement Mechanics Test
+# 2D Movement Mechanics Test
 
 Design analysis of the player controller, movement, and combat systems.
 
