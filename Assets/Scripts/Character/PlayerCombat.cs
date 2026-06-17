@@ -179,12 +179,12 @@ public class PlayerCombat : MonoBehaviour
             TransitionTo(CombatPhase.NotAttacking);
     }
 
-    public CombatState GetState()
+    public CombatState      GetState()
     {
         if (TryGetActiveStats(out var stats))
             return new CombatState(currentPhase, stats.HorizontalDrag, stats.VerticalDrag, stats.FallGravityMultiplier);
 
-        return new CombatState(currentPhase, 0f, 0f, 1f);
+        return new CombatState(currentPhase, 0f, 0f, stats.FallGravityMultiplier);
     }
 
     #endregion
